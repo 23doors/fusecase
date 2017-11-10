@@ -16,16 +16,16 @@ export default class EntityInstance<T extends Object> {
 
     constructor(readonly entity: Entity<T>, readonly id: string) {
         this.obj = Object.create(entity.ctor.prototype) as T
-
+        
         if (entity.localStorage.contains(id)) {
             this.transactions = JSON.parse(entity.localStorage.getItem(id)) as Transaction<T>[]
         }
         else {
             this.transactions = [ new Transaction(entity.localStorage.createID(), entity.ctor) ]
         }
-        entity.remoteServer.subscribe(this)
         this.replay()
-        this.instrument()       
+        this.instrument()
+        entity.remoteServer.subscribe(this)     
     }
 
     private replay(): void {

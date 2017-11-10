@@ -37,6 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var HOST = 'syncano.space';
 var DEFAULT_HEADERS = { 'Content-Type': 'application/json' };
+var Transaction_1 = require("./Transaction");
 var Server = /** @class */ (function () {
     function Server(instanceName, token) {
         this.sentTransactions = new Set();
@@ -45,27 +46,23 @@ var Server = /** @class */ (function () {
     }
     Server.prototype.notifyNewTransactions = function (instance) {
         return __awaiter(this, void 0, void 0, function () {
-            var latestTid, transaction, i, response;
+            var latestTid, transactions, transaction, i, response;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         latestTid = undefined;
-                        console.log(instance.transactions.length);
+                        transactions = instance.transactions;
                         i = 0;
                         _a.label = 1;
                     case 1:
-                        if (!(i < instance.transactions.length)) return [3 /*break*/, 4];
-                        console.log("step1");
-                        transaction = instance.transactions[i];
-                        console.log("step2");
+                        if (!(i < transactions.length)) return [3 /*break*/, 4];
+                        transaction = transactions[i];
                         if (i > 0) {
-                            latestTid = instance.transactions[i - 1].localId;
+                            latestTid = transactions[i - 1].localId;
                         }
-                        console.log("step3");
                         if (this.sentTransactions.has(transaction.localId)) {
                             return [3 /*break*/, 4];
                         }
-                        console.log("step4");
                         return [4 /*yield*/, this.sync(instance, {
                                 latestTid: latestTid,
                                 tid: transaction.localId,
@@ -89,21 +86,14 @@ var Server = /** @class */ (function () {
             var response;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0:
-                        console.log(JSON.stringify({
+                    case 0: return [4 /*yield*/, this.post('sync-state/sync', {
                             tid: tid,
                             action: action,
                             payload: payload,
-                            latestTid: latestTid
-                        }));
-                        return [4 /*yield*/, this.post('sync-state/sync', {
-                                tid: tid,
-                                action: action,
-                                payload: payload,
-                                latestTid: latestTid,
-                                appid: 'todolist',
-                                entity: instance.id,
-                            })];
+                            latestTid: latestTid,
+                            appid: 'todolist',
+                            entity: instance.id,
+                        })];
                     case 1:
                         response = _b.sent();
                         return [2 /*return*/, response];
@@ -112,9 +102,27 @@ var Server = /** @class */ (function () {
         });
     };
     Server.prototype.subscribe = function (instance) {
-        this.post('sync-state/list', {
-            appid: 'todolist',
-            entity: instance.id
+        return __awaiter(this, void 0, void 0, function () {
+            var obs, _i, obs_1, t, transaction;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.post('sync-state/list', {
+                            appid: 'todolist',
+                            entity: instance.id
+                        })];
+                    case 1:
+                        obs = _a.sent();
+                        this.sentTransactions = new Set(obs);
+                        for (_i = 0, obs_1 = obs; _i < obs_1.length; _i++) {
+                            t = obs_1[_i];
+                            transaction = new Transaction_1.default(t.tid, instance.obj[t.action], JSON.parse(t.payload));
+                            instance.transactions.push(transaction);
+                        }
+                        console.log(instance.transactions.length);
+                        console.log(instance.transactions.length);
+                        return [2 /*return*/, obs];
+                }
+            });
         });
     };
     Server.prototype.post = function (endpoint, args) {
@@ -124,20 +132,18 @@ var Server = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        debugger;
+                        _a.trys.push([0, 3, , 4]);
                         return [4 /*yield*/, fetch("" + this.url + endpoint + "/", { body: JSON.stringify(args), headers: DEFAULT_HEADERS, method: 'post' })];
                     case 1:
                         res = _a.sent();
-                        console.log(res);
-                        return [3 /*break*/, 3];
+                        return [4 /*yield*/, res.json()];
                     case 2:
-                        error_1 = _a.sent();
-                        console.log(error_1);
-                        return [3 /*break*/, 3];
+                        res = _a.sent();
+                        return [3 /*break*/, 4];
                     case 3:
-                        console.log("SDADSDS", res);
-                        return [2 /*return*/, res];
+                        error_1 = _a.sent();
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/, res];
                 }
             });
         });

@@ -2,6 +2,7 @@ import EntityInstance from './EntityInstance'
 const HOST = 'syncano.space'
 const DEFAULT_HEADERS = { 'Content-Type': 'application/json' }
 import { IRemoteServer } from './RemoteServer'
+import Transaction  from "./Transaction";
 declare var fetch: any
 declare var console: any
 export default class Server implements IRemoteServer {
@@ -14,21 +15,18 @@ export default class Server implements IRemoteServer {
   }
   async notifyNewTransactions(instance: EntityInstance<any>) {
     let latestTid = undefined
+    const {
+      transactions
+    } = instance
     var transaction
-    console.log(instance.transactions.length)
-    for (var i = 0; i < instance.transactions.length; i++) {
-      console.log("step1")
-      transaction = instance.transactions[i]
-      console.log("step2")
+    for (var i = 0; i < transactions.length; i++) {
+      transaction = transactions[i]
       if (i > 0) {
-        latestTid = instance.transactions[i - 1].localId
+        latestTid = transactions[i - 1].localId
       }
-      console.log("step3")
       if (this.sentTransactions.has(transaction.localId)) {
         break;
       }
-      console.log("step4")
-
 
       let response = await this.sync(instance, {
         latestTid,
@@ -38,21 +36,12 @@ export default class Server implements IRemoteServer {
       })
     }
   }
-
   async sync(instance: EntityInstance<any>, {
     tid,
     action,
     payload,
     latestTid
   }) {
-    console.log(
-      JSON.stringify({
-        tid,
-        action,
-        payload,
-        latestTid
-      })
-    )
     const response = await this.post('sync-state/sync', {
       tid,
       action,
@@ -63,22 +52,28 @@ export default class Server implements IRemoteServer {
     })
     return response
   }
-  subscribe(instance: EntityInstance<any>) {
-    this.post('sync-state/list', {
+  async subscribe(instance: EntityInstance<any>) {
+    const obs = await this.post('sync-state/list', {
       appid: 'todolist',
       entity: instance.id
     })
+    this.sentTransactions = new Set(obs)
+    for(var t of obs){
+      var transaction = new Transaction(t.tid, instance.obj[t.action], JSON.parse(t.payload));
+      instance.transactions.push(transaction);
+    }
+    console.log(instance.transactions.length)
+    console.log(instance.transactions.length)
+    
+    return obs
   }
   async post(endpoint: String, args = {}) {
     let res
     try {
-      debugger;
-      res = await fetch(`${this.url}${endpoint}/`, { body: JSON.stringify(args), headers: DEFAULT_HEADERS, method:'post' })
-      console.log(res)
+      res = await fetch(`${this.url}${endpoint}/`, { body: JSON.stringify(args), headers: DEFAULT_HEADERS, method: 'post' })
+      res = await res.json()
     } catch (error) {
-      console.log(error)
     }
-    console.log("SDADSDS",res)
     return res
   }
 }

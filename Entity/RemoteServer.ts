@@ -5,7 +5,7 @@ declare var console:any
 
 export interface IRemoteServer {
     notifyNewTransactions(instance: EntityInstance<any>): void
-    subscribe(instance: EntityInstance<any>): void
+    subscribe(instance: EntityInstance<any>): any
 }
 
 export class DefaultRemoteServer implements IRemoteServer {
