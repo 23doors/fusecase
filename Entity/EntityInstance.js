@@ -14,9 +14,11 @@ var EntityInstance = /** @class */ (function () {
         else {
             this.transactions = [new Transaction_1.default(entity.localStorage.createID(), entity.ctor)];
         }
-        this.replay();
-        this.instrument();
-        entity.remoteServer.subscribe(this);
+        var self = this;
+        entity.remoteServer.subscribe(this).then(function (r) {
+            self.replay();
+            self.instrument();
+        });
     }
     EntityInstance.prototype.replay = function () {
         var trans = this.transacting;

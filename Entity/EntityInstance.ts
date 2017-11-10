@@ -23,9 +23,13 @@ export default class EntityInstance<T extends Object> {
         else {
             this.transactions = [ new Transaction(entity.localStorage.createID(), entity.ctor) ]
         }
-        this.replay()
-        this.instrument()
-        entity.remoteServer.subscribe(this)     
+        var self = this
+        entity.remoteServer.subscribe(this).then(
+            r => {
+                self.replay()
+                self.instrument()
+            }
+        )    
     }
 
     private replay(): void {
